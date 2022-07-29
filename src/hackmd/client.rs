@@ -1,25 +1,6 @@
+use super::note::Note;
 use reqwest::{IntoUrl, RequestBuilder};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
-
-pub enum ReadPermission {
-    Owner,
-    SignedIn,
-    Guest,
-}
-pub enum WritePermission {
-    Owner,
-    SignedIn,
-    Guest,
-}
-
-pub enum CommentPermission {
-    Disabled,
-    Forbidden,
-    Owners,
-    SignedInUsers,
-    Everyone,
-}
 
 pub struct Client {
     client: reqwest::Client,
@@ -55,7 +36,7 @@ impl Client {
     impl_http_method!(delete);
 
     async fn get_me(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let _ = self.get(format!("{}/v1/me", self.base_url)).send().await?;
+        self.get(format!("{}/v1/me", self.base_url)).send().await?;
 
         Ok(())
     }
@@ -75,11 +56,4 @@ impl Client {
 
         Ok(note)
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Note {
-    pub id: String,
-    pub title: String,
-    pub tags: Vec<String>,
 }

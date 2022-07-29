@@ -1,12 +1,11 @@
 mod hackmd;
 mod tgdf;
 
-use std::fs;
-
 use futures::future::try_join_all;
 use iter_tools::Itertools;
 use serde::Serialize;
 use serde_json::json;
+use std::fs;
 use tera::Tera;
 
 struct CoWriteCreator<T> {
