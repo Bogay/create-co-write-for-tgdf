@@ -1,17 +1,18 @@
-use super::note::Note;
-use reqwest::{IntoUrl, RequestBuilder};
-use serde_json::json;
+use super::note::NoteAPI;
+use reqwest::{RequestBuilder, Url};
 
 pub struct Client {
     client: reqwest::Client,
-    base_url: String,
+    base_url: Url,
     token: String,
 }
 
 macro_rules! impl_http_method {
     ($method: ident) => {
         #[allow(dead_code)]
-        fn $method<T: IntoUrl>(&self, url: T) -> RequestBuilder {
+        pub(crate) fn $method(&self, path: &str) -> RequestBuilder {
+            let mut url = self.base_url.clone();
+            url.set_path(path);
             self.client.$method(url).bearer_auth(&self.token)
         }
     };
@@ -22,7 +23,7 @@ impl Client {
         let client = reqwest::Client::new();
         let client = Self {
             client,
-            base_url: "https://api.hackmd.io".to_string(),
+            base_url: "https://api.hackmd.io".parse::<Url>()?,
             token: token.to_string(),
         };
         client.get_me().await?;
@@ -36,24 +37,12 @@ impl Client {
     impl_http_method!(delete);
 
     async fn get_me(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.get(format!("{}/v1/me", self.base_url)).send().await?;
+        self.get("/v1/me").send().await?;
 
         Ok(())
     }
 
-    pub async fn create_note(&self, content: &str) -> Result<Note, Box<dyn std::error::Error>> {
-        let payload = json!({
-            "content": content,
-            "readPermission": "guest",
-            "writePermission": "signed_in",
-        });
-        let response = self
-            .post(format!("{}/v1/notes", self.base_url))
-            .json(&payload)
-            .send()
-            .await?;
-        let note = response.json::<Note>().await?;
-
-        Ok(note)
+    pub fn note(&self) -> NoteAPI {
+        NoteAPI::new(self)
     }
 }

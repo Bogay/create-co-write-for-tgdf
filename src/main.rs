@@ -2,7 +2,6 @@ mod hackmd;
 mod tgdf;
 
 use futures::future::try_join_all;
-use iter_tools::Itertools;
 use serde::Serialize;
 use serde_json::json;
 use std::fs;
@@ -39,11 +38,12 @@ where
             .sessions
             .iter()
             .map(|session| self.gen_session_note_content(session))
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()?;
+        let note_api = self.client.note();
         let notes = try_join_all(
             note_contents
                 .iter()
-                .map(|note_content| self.client.create_note(note_content)),
+                .map(|note_content| note_api.create(note_content)),
         )
         .await?;
 
@@ -58,22 +58,17 @@ where
             &self.category_template,
             &tera::Context::from_value(json!({ "ctx": &ctx })).unwrap(),
             false,
-        )
-        .unwrap();
-
-        let ids = notes.iter().map(|note| &note.id).join("\n");
-        println!("{}", ids);
+        )?;
 
         Ok(())
     }
 
-    pub(crate) fn gen_session_note_content(&self, session: &T) -> String {
+    pub(crate) fn gen_session_note_content(&self, session: &T) -> tera::Result<String> {
         Tera::one_off(
             &self.note_template,
             &tera::Context::from_serialize(session).unwrap(),
             false,
         )
-        .unwrap()
     }
 }
 

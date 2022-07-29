@@ -44,7 +44,7 @@ impl FromStr for Time {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let h_and_m = s
-            .split(":")
+            .split(':')
             .map(|v| v.parse::<u8>())
             .collect::<Result<Vec<_>, _>>()?;
         let (hour, minute) = h_and_m
