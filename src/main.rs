@@ -1,10 +1,12 @@
 mod hackmd;
 mod tgdf;
 
+use clap::{Parser, Subcommand};
 use futures::future::try_join_all;
 use serde::Serialize;
 use serde_json::json;
 use std::fs;
+use std::path::PathBuf;
 use tera::Tera;
 
 struct CoWriteCreator<T> {
@@ -56,7 +58,7 @@ where
 
         Tera::one_off(
             &self.category_template,
-            &tera::Context::from_value(json!({ "ctx": &ctx })).unwrap(),
+            &tera::Context::from_value(json!({ "ctx": &ctx }))?,
             false,
         )?;
 
@@ -66,19 +68,28 @@ where
     pub(crate) fn gen_session_note_content(&self, session: &T) -> tera::Result<String> {
         Tera::one_off(
             &self.note_template,
-            &tera::Context::from_serialize(session).unwrap(),
+            &tera::Context::from_serialize(session)?,
             false,
         )
     }
 }
 
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+struct Cli {
+    /// Path to the HackMD API token
+    #[clap(long, value_parser, value_name = "FILE")]
+    token_path: PathBuf,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
     let sessions = tgdf::fetch().await?;
     let mut creator = CoWriteCreator::<tgdf::Session>::new(
-        &fs::read_to_string("token.txt").unwrap(),
-        fs::read_to_string("templates/category.tera").unwrap(),
-        fs::read_to_string("templates/note.tera").unwrap(),
+        &fs::read_to_string(&cli.token_path)?,
+        fs::read_to_string("templates/category.tera")?,
+        fs::read_to_string("templates/note.tera")?,
     )
     .await;
 
