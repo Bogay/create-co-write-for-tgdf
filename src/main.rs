@@ -8,9 +8,11 @@ use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use tera::Tera;
+use tgdf::Agenda;
 
 struct CoWriteCreator<T> {
     client: hackmd::Client,
+    agendas: Vec<Agenda>,
     sessions: Vec<T>,
     category_template: String,
     note_template: String,
@@ -28,11 +30,16 @@ where
             category_template,
             note_template,
             sessions: vec![],
+            agendas: vec![],
         }
     }
 
     pub fn add_session(&mut self, session: T) {
         self.sessions.push(session);
+    }
+
+    pub fn add_agenda(&mut self, agenda: Agenda) {
+        self.agendas.push(agenda);
     }
 
     pub async fn create(&self) -> Result<(), Box<dyn std::error::Error>> {
@@ -48,19 +55,48 @@ where
                 .map(|note_content| note_api.create(note_content)),
         )
         .await?;
+        let mut notes = notes.into_iter();
 
-        let ctx: Vec<_> = self
-            .sessions
+        let agendas = self
+            .agendas
             .iter()
-            .zip(&notes)
-            .map(|(session, note)| json!({"session": session, "note": note}))
-            .collect();
+            .map(|a| {
+                let periods = a
+                    .periods
+                    .iter()
+                    .map(|p| {
+                        let mut sessions = vec![];
+                        for s in &p.sessions {
+                            let mut s = json!(s);
+                            s.as_object_mut()
+                                .unwrap()
+                                .entry("note_id")
+                                .or_insert(json!(notes.next().unwrap().id));
+                            sessions.push(s);
+                        }
+                        let mut p = json!(p);
+                        p.as_object_mut()
+                            .unwrap()
+                            .entry("sessions")
+                            .and_modify(|s| *s = json!(sessions));
+                        p
+                    })
+                    .collect::<Vec<_>>();
+                let mut a = json!(a);
+                a.as_object_mut()
+                    .unwrap()
+                    .entry("periods")
+                    .and_modify(|p| *p = json!(periods));
+                a
+            })
+            .collect::<Vec<_>>();
 
-        Tera::one_off(
+        let category_content = Tera::one_off(
             &self.category_template,
-            &tera::Context::from_value(json!({ "ctx": &ctx }))?,
+            &tera::Context::from_value(json!({ "agendas": &agendas }))?,
             false,
         )?;
+        self.client.note().create(&category_content).await?;
 
         Ok(())
     }
@@ -85,7 +121,7 @@ struct Cli {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    let sessions = tgdf::fetch().await?;
+    let agendas = tgdf::fetch().await?;
     let mut creator = CoWriteCreator::<tgdf::Session>::new(
         &fs::read_to_string(&cli.token_path)?,
         fs::read_to_string("templates/category.tera")?,
@@ -93,8 +129,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await;
 
-    for session in sessions {
-        creator.add_session(session);
+    for session in agendas.iter().map(|a| a.sessions()).flatten() {
+        // FIXME: clone is not necessary
+        creator.add_session(session.clone());
+    }
+    for agenda in agendas {
+        creator.add_agenda(agenda);
     }
 
     creator.create().await
