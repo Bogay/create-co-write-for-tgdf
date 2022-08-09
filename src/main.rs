@@ -1,7 +1,7 @@
 mod hackmd;
 mod tgdf;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use futures::future::try_join_all;
 use serde::Serialize;
 use serde_json::json;

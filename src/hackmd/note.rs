@@ -41,4 +41,13 @@ impl<'a> NoteAPI<'a> {
 
         Ok(note)
     }
+
+    pub async fn delete(&self, id: &str) -> Result<(), Box<dyn std::error::Error>> {
+        self.client
+            .delete(&format!("/v1/notes/{}", id))
+            .send()
+            .await?;
+
+        Ok(())
+    }
 }
