@@ -1,0 +1,30 @@
+# {{ title }}
+
+###### tags: `2022TGDF` `台北遊戲開發者論壇` `共筆筆記` `TGDF_TEST`
+
+- [2022 TGDF 台北遊戲開發者論壇](https://2022.tgdf.tw/)
+- [共筆目錄](https://hackmd.io/@bogay/TGDF-auto)
+
+## 講者介紹
+
+{% for presenter in presenters -%}
+
+[{{ presenter.name }}]({{ presenter.link }})
+
+{{ presenter.introduction }}
+
+{% if not loop.last -%}
+
+---
+
+{% endif %}
+
+{% endfor %}
+
+## 議程介紹
+
+{{ description }}
+
+# 內容筆記
+
+<!-- 在這裡之下寫筆記。 -->

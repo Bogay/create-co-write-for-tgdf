@@ -1,0 +1,21 @@
+# 2022 TGDF 台北遊戲開發者論壇 共筆筆記目錄
+
+###### tags: `2022TGDF` `台北遊戲開發者論壇` `共筆筆記` `TGDF_TEST`
+
+- [共筆筆記](/s/AvdwzYvrSLmGc8nH2uy_VA)
+- [官方網站](https://2022.tgdf.tw)
+
+{% for agenda in agendas %}
+
+{{ agenda.date }}
+---
+
+{% for period in agenda.periods -%}
+{{ period.time[0] }} - {{ period.time[1] }}
+---
+{% for session in period.sessions -%}
+- [`T{{ session.track }} {{ session.time[0] }}-{{ session.time[1] }}` {{ session.title }}](/s/{{ session.note_id }})
+{% endfor %}
+
+{% endfor %}
+{% endfor %}
