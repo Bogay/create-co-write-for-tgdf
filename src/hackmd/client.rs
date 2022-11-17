@@ -1,6 +1,7 @@
 use super::note::NoteAPI;
 use reqwest::{RequestBuilder, Url};
 
+#[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
     base_url: Url,

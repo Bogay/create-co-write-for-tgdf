@@ -7,6 +7,7 @@ use serde::Serialize;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tera::Tera;
 use tgdf::Agenda;
 
@@ -48,11 +49,19 @@ where
             .iter()
             .map(|session| self.gen_session_note_content(session))
             .collect::<Result<Vec<_>, _>>()?;
-        let note_api = self.client.note();
+        let note_apis = note_contents
+            .iter()
+            .map(|_| self.client.note())
+            .collect::<Vec<_>>();
+        let builders = note_apis
+            .iter()
+            .map(|api| api.builder())
+            .collect::<Vec<_>>();
         let notes = try_join_all(
-            note_contents
-                .iter()
-                .map(|note_content| note_api.create(note_content)),
+            builders
+                .into_iter()
+                .zip(note_contents)
+                .map(|(builder, content)| builder.content(content).done()),
         )
         .await?;
         let mut notes = notes.into_iter();
@@ -91,12 +100,18 @@ where
             })
             .collect::<Vec<_>>();
 
+        // create category
         let category_content = Tera::one_off(
             &self.category_template,
             &tera::Context::from_value(json!({ "agendas": &agendas }))?,
             false,
         )?;
-        self.client.note().create(&category_content).await?;
+        self.client
+            .note()
+            .builder()
+            .content(category_content)
+            .done()
+            .await?;
 
         Ok(())
     }
