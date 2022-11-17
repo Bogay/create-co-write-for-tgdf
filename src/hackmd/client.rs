@@ -1,4 +1,4 @@
-use super::note::NoteApi;
+use super::{note::NoteApi, user::UserApi};
 use reqwest::{RequestBuilder, Url};
 
 #[derive(Debug, Clone)]
@@ -27,7 +27,7 @@ impl Client {
             base_url: "https://api.hackmd.io".parse::<Url>()?,
             token: token.to_string(),
         };
-        client.get_me().await?;
+        client.user().me().await?;
         Ok(client)
     }
 
@@ -37,13 +37,11 @@ impl Client {
     impl_http_method!(patch);
     impl_http_method!(delete);
 
-    async fn get_me(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.get("/v1/me").send().await?;
-
-        Ok(())
-    }
-
     pub fn note(&self) -> NoteApi {
         NoteApi::new(self)
+    }
+
+    pub fn user(&self) -> UserApi {
+        UserApi::new(self)
     }
 }
