@@ -1,4 +1,4 @@
-use super::{note::NoteApi, user::UserApi};
+use super::{note::NoteApi, team::TeamApi, user::UserApi};
 use reqwest::{RequestBuilder, Url};
 
 #[derive(Debug, Clone)]
@@ -43,5 +43,9 @@ impl Client {
 
     pub fn user(&self) -> UserApi {
         UserApi::new(self)
+    }
+
+    pub fn team(&self) -> TeamApi {
+        TeamApi::new(self)
     }
 }
