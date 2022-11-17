@@ -1,4 +1,4 @@
-use super::note::NoteAPI;
+use super::note::NoteApi;
 use reqwest::{RequestBuilder, Url};
 
 #[derive(Debug, Clone)]
@@ -43,7 +43,7 @@ impl Client {
         Ok(())
     }
 
-    pub fn note(&self) -> NoteAPI {
-        NoteAPI::new(self)
+    pub fn note(&self) -> NoteApi {
+        NoteApi::new(self)
     }
 }

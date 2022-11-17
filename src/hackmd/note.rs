@@ -127,11 +127,11 @@ pub struct Note {
     pub tags: Vec<String>,
 }
 
-pub struct NoteAPI<'a> {
+pub struct NoteApi<'a> {
     client: &'a Client,
 }
 
-impl<'a> NoteAPI<'a> {
+impl<'a> NoteApi<'a> {
     pub fn new(client: &'a Client) -> Self {
         Self { client }
     }
