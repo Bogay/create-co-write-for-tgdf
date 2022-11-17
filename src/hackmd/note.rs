@@ -125,6 +125,27 @@ pub struct Note {
     pub id: String,
     pub title: String,
     pub tags: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: u64,
+    #[serde(rename = "publishType")]
+    pub publish_type: String,
+    #[serde(rename = "publishedAt")]
+    pub published_at: Option<u64>,
+    pub permalink: Option<String>,
+    #[serde(rename = "shortId")]
+    pub short_id: String,
+    #[serde(rename = "lastChangedAt")]
+    pub last_changed_at: u64,
+    #[serde(rename = "userPath")]
+    pub user_path: String,
+    #[serde(rename = "teamPath")]
+    pub team_path: String,
+    #[serde(rename = "readPermission")]
+    pub read_permission: permission::Read,
+    #[serde(rename = "writePermission")]
+    pub write_permission: permission::Write,
+    #[serde(rename = "publishLink")]
+    pub publish_link: String,
 }
 
 pub struct NoteApi<'a> {
