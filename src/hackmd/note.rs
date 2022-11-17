@@ -75,6 +75,18 @@ impl<'a> NoteAPI<'a> {
         Self { client }
     }
 
+    pub async fn get(&self, id: &str) -> Result<Note, Box<dyn std::error::Error>> {
+        let note = self
+            .client
+            .get(&format!("/v1/notes/{}", id))
+            .send()
+            .await?
+            .json::<Note>()
+            .await?;
+
+        Ok(note)
+    }
+
     pub async fn get_list(&self) -> Result<Vec<Note>, Box<dyn std::error::Error>> {
         let notes = self
             .client
