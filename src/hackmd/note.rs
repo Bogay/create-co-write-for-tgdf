@@ -8,8 +8,11 @@ pub struct NoteBuilder<'a> {
     client: &'a Client,
     title: Option<String>,
     content: Option<String>,
+    #[serde(rename = "commentPermission")]
     comment_permission: Option<permission::Comment>,
+    #[serde(rename = "readPermission")]
     read_permission: Option<permission::Read>,
+    #[serde(rename = "writePermission")]
     write_permission: Option<permission::Write>,
 }
 
@@ -56,6 +59,64 @@ impl<'a> NoteBuilder<'a> {
         let note = response.json::<Note>().await?;
 
         Ok(note)
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct UpdateNote<'a> {
+    #[serde(skip)]
+    client: &'a Client,
+    #[serde(skip)]
+    id: String,
+    content: Option<String>,
+    #[serde(rename = "readPermission")]
+    read_permission: Option<permission::Read>,
+    #[serde(rename = "writePermission")]
+    write_permission: Option<permission::Write>,
+    permalink: Option<String>,
+}
+
+impl<'a> UpdateNote<'a> {
+    pub fn new(client: &'a Client, id: String) -> Self {
+        Self {
+            client,
+            id,
+            content: None,
+            read_permission: None,
+            write_permission: None,
+            permalink: None,
+        }
+    }
+
+    pub fn content(mut self, content: String) -> Self {
+        self.content = Some(content);
+        self
+    }
+
+    pub fn read_permission(mut self, read_permission: permission::Read) -> Self {
+        self.read_permission = Some(read_permission);
+        self
+    }
+
+    pub fn write_permission(mut self, write_permission: permission::Write) -> Self {
+        self.write_permission = Some(write_permission);
+        self
+    }
+
+    pub fn permalink(mut self, permalink: String) -> Self {
+        self.permalink = Some(permalink);
+        self
+    }
+
+    pub async fn done(self) -> Result<(), Box<dyn std::error::Error>> {
+        let payload = json!(self);
+        self.client
+            .patch(&format!("/v1/notes/{}", self.id))
+            .json(&payload)
+            .send()
+            .await?;
+
+        Ok(())
     }
 }
 
@@ -110,5 +171,9 @@ impl<'a> NoteAPI<'a> {
             .await?;
 
         Ok(())
+    }
+
+    pub fn update(&self, id: String) -> UpdateNote {
+        UpdateNote::new(&self.client, id)
     }
 }
