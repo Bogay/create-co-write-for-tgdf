@@ -23,13 +23,14 @@ impl<'a> UserApi<'a> {
     }
 
     pub async fn me(&self) -> Result<User, Box<dyn std::error::Error>> {
-        let me = self
-            .client
-            .get("/v1/me")
-            .send()
-            .await?
-            .json::<User>()
-            .await?;
-        Ok(me)
+        let resp = self.client.get("/v1/me").send().await?;
+
+        match resp.error_for_status() {
+            Ok(resp) => {
+                let me = resp.json::<User>().await?;
+                Ok(me)
+            }
+            Err(err) => Err(Box::new(err)),
+        }
     }
 }
