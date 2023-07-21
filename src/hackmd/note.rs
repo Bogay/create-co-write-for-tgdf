@@ -139,7 +139,7 @@ pub struct Note {
     #[serde(rename = "userPath")]
     pub user_path: String,
     #[serde(rename = "teamPath")]
-    pub team_path: String,
+    pub team_path: Option<String>,
     #[serde(rename = "readPermission")]
     pub read_permission: permission::Read,
     #[serde(rename = "writePermission")]
