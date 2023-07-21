@@ -9,7 +9,7 @@ pub struct Team {
     path: String,
     name: String,
     logo: String,
-    description: String,
+    description: Option<String>,
     visibility: String,
     #[serde(rename = "createdAt")]
     created_at: u64,
