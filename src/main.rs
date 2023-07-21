@@ -3,25 +3,20 @@ mod tgdf;
 
 use clap::Parser;
 use futures::future::try_join_all;
-use serde::Serialize;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
 use tera::Tera;
-use tgdf::Agenda;
+use tgdf::{Agenda, Session};
 
-struct CoWriteCreator<T> {
+struct CoWriteCreator {
     client: hackmd::Client,
     agendas: Vec<Agenda>,
-    sessions: Vec<T>,
     category_template: String,
     note_template: String,
 }
 
-impl<T> CoWriteCreator<T>
-where
-    T: Serialize,
-{
+impl CoWriteCreator {
     pub async fn new(token: &str, category_template: String, note_template: String) -> Self {
         let client = hackmd::Client::new(token).await.unwrap();
 
@@ -29,24 +24,23 @@ where
             client,
             category_template,
             note_template,
-            sessions: vec![],
             agendas: vec![],
         }
-    }
-
-    pub fn add_session(&mut self, session: T) {
-        self.sessions.push(session);
     }
 
     pub fn add_agenda(&mut self, agenda: Agenda) {
         self.agendas.push(agenda);
     }
 
+    fn sessions(&self) -> Vec<&Session> {
+        self.agendas.iter().flat_map(|a| a.sessions()).collect()
+    }
+
     pub async fn create(&self) -> Result<(), Box<dyn std::error::Error>> {
         let note_contents = self
-            .sessions
+            .sessions()
             .iter()
-            .map(|session| self.gen_session_note_content(session))
+            .map(|session| self.gen_session_note_content(*session))
             .collect::<Result<Vec<_>, _>>()?;
         let note_apis = note_contents
             .iter()
@@ -115,7 +109,7 @@ where
         Ok(())
     }
 
-    pub(crate) fn gen_session_note_content(&self, session: &T) -> tera::Result<String> {
+    pub(crate) fn gen_session_note_content(&self, session: &Session) -> tera::Result<String> {
         Tera::one_off(
             &self.note_template,
             &tera::Context::from_serialize(session)?,
@@ -136,17 +130,13 @@ struct Cli {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let agendas = tgdf::fetch().await?;
-    let mut creator = CoWriteCreator::<tgdf::Session>::new(
+    let mut creator = CoWriteCreator::new(
         &fs::read_to_string(&cli.token_path)?,
         fs::read_to_string("templates/category.tera")?,
         fs::read_to_string("templates/note.tera")?,
     )
     .await;
 
-    for session in agendas.iter().map(|a| a.sessions()).flatten() {
-        // FIXME: clone is not necessary
-        creator.add_session(session.clone());
-    }
     for agenda in agendas {
         creator.add_agenda(agenda);
     }
