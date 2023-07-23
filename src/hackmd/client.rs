@@ -1,6 +1,7 @@
-use super::note::NoteAPI;
+use super::{note::NoteApi, team::TeamApi, user::UserApi};
 use reqwest::{RequestBuilder, Url};
 
+#[derive(Debug, Clone)]
 pub struct Client {
     client: reqwest::Client,
     base_url: Url,
@@ -26,7 +27,7 @@ impl Client {
             base_url: "https://api.hackmd.io".parse::<Url>()?,
             token: token.to_string(),
         };
-        client.get_me().await?;
+        client.user().me().await?;
         Ok(client)
     }
 
@@ -36,13 +37,15 @@ impl Client {
     impl_http_method!(patch);
     impl_http_method!(delete);
 
-    async fn get_me(&self) -> Result<(), Box<dyn std::error::Error>> {
-        self.get("/v1/me").send().await?;
-
-        Ok(())
+    pub fn note(&self) -> NoteApi {
+        NoteApi::new(self)
     }
 
-    pub fn note(&self) -> NoteAPI {
-        NoteAPI::new(self)
+    pub fn user(&self) -> UserApi {
+        UserApi::new(self)
+    }
+
+    pub fn team(&self) -> TeamApi {
+        TeamApi::new(self)
     }
 }
